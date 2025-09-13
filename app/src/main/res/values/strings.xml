@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">homeLauncher</string>
+    <string name="hint_text">Tap a dot or draw pattern</string>
+</resources>

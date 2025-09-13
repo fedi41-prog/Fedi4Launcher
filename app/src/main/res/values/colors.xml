@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="line_color">#FF00E5FF</color>
+    <color name="background_color">#FC282828</color>
+    <color name="dot_color">#FF00E5FF</color>
+    <color name="dot_outline_color">#88FFFFFF</color>
+</resources>

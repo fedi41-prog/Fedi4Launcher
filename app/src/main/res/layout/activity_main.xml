@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color">
+
+    <!-- Großes Pattern Pad in der Mitte -->
+    <com.fedi4.launcher.SquareLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center">
+        <com.fedi4.launcher.PatternPadView
+            android:id="@+id/patternPad"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.fedi4.launcher.SquareLayout>
+
+</FrameLayout>
