@@ -1,6 +1,5 @@
-package com.fedi4.launcher.app.menu;
+package com.fedi4.launcher.app;
 
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
@@ -9,52 +8,59 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import com.fedi4.launcher.MainActivity;
-import com.fedi4.launcher.app.PatternPadView;
 
 public class AppMenuManager {
 
     private final String TAG = "AppMenuManager";
     private static AppMenuManager menu;
     private PatternPadView patternPad;
-    private MainActivity context;
+    private static MainActivity context;
 
-    private AppMenuItem[] items = new AppMenuItem[9];
-
-    private AppMenuItem currentPoint;
+    private AppMenuItem root = new AppMenuItem("");
+    private AppMenuItem currentItem = root;
 
     private AppMenuManager(@NonNull MainActivity context) {
         menu = this;
         this.context = context;
         this.patternPad = context.getPatternPad();
 
+        renderMenu(-1);
+
     }
 
-    private void initMenu() {
+    private void renderMenu(int notResetIcon) {
 
-        for (int i = 0; i < items.length; i++) {
+        Log.d(TAG, "rendering Menu...");
 
-            if (items[i] != null) {
+        AppMenuItem[] it = currentItem.getItems();
 
-                assignAppIconToPoint(i, items[i].getPackageName());
-
+        for (int i = 0; i < it.length; i++) {
+            Log.d(TAG, "item" + i);
+            if (it[i] != null) {
+                if (!it[i].getPackageName().isEmpty()) {
+                    Log.d(TAG, "setting icon for " + it[i].getPackageName());
+                    assignAppIconToPoint(i, it[i].getPackageName());
+                }
+            } else if (i != notResetIcon){
+                assignAppIconToPoint(i, "$RESET");
             }
 
         }
 
     }
 
-    private void updateMenu() {
-
-
-
+    public void setRoot(AppMenuItem root) {
+        this.root = root;
+        currentItem = root;
+        renderMenu(-1);
     }
 
-    public AppMenuManager insertItem(AppMenuItem item, int index) {
-        items[index] = item;
-        return this;
+    public void updateItems(AppMenuItem root) {
+        currentItem = root;
     }
-    public AppMenuItem[] getItems() {
-        return items;
+
+    public AppMenuItem getCurrentItem() {
+        return currentItem;
     }
 
     public static AppMenuManager getInstance(MainActivity context) {
@@ -63,6 +69,10 @@ public class AppMenuManager {
             return menu;
         }
         return menu;
+    }
+
+    public static MainActivity getContext() {
+        return context;
     }
 
     private void assignAppIconToPoint(int pointIndex, String packageName) {
@@ -85,15 +95,32 @@ public class AppMenuManager {
 
         @Override
         public void onTouchDetected(int point) {
+            AppMenuManager manager = AppMenuManager.getInstance(AppMenuManager.getContext());
+
+            AppMenuItem next = manager.getCurrentItem().getItems()[point];
+
+            if (next != null) {
+                manager.updateItems(manager.getCurrentItem().getItems()[point]);
+            }
+
+            manager.renderMenu(point);
+
+
 
         }
 
         @Override
         public void onTouchEnded() {
+            AppMenuManager manager = AppMenuManager.getInstance(AppMenuManager.getContext());
 
+            AppMenuManager.getContext().launchApp(manager.getCurrentItem().getPackageName());
+
+            manager.updateItems(manager.root);
+
+            manager.renderMenu(-1);
         }
     }
-    private static class AppMenuItem {
+    public static class AppMenuItem {
         private AppMenuItem[] items = new AppMenuItem[9];
         private String packageName;
 

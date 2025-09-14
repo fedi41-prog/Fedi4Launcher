@@ -3,16 +3,14 @@ package com.fedi4.launcher;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import com.fedi4.launcher.app.PatternPadView;
-import com.fedi4.launcher.app.menu.AppMenuManager;
+import com.fedi4.launcher.app.AppMenuManager;
 
 import java.util.List;
 
@@ -32,11 +30,12 @@ public class MainActivity extends AppCompatActivity {
         patternPad.setTouchListener(new AppMenuManager.TouchListener());
 
         // Example call in onCreate after patternPad is initialized
-
         listAllInstalledApps();
+
+        initMenu();
     }
 
-    private void launchApp(String packageName) {
+    public void launchApp(String packageName) {
         PackageManager pm = getPackageManager();
         Intent intent = pm.getLaunchIntentForPackage(packageName);
         if (intent != null) {
@@ -73,5 +72,24 @@ public class MainActivity extends AppCompatActivity {
 
     public PatternPadView getPatternPad() {
         return patternPad;
+    }
+
+
+    private void initMenu() {
+
+        menuManager.setRoot(
+                new AppMenuManager.AppMenuItem("")
+                        .insertItem(
+                                new AppMenuManager.AppMenuItem("com.android.settings")
+                                        .insertItem(
+                                                new AppMenuManager.AppMenuItem("com.chess")
+                                                        .insertItem(new AppMenuManager.AppMenuItem("com.openai.chatgpt"), 0)
+                                                        .insertItem(new AppMenuManager.AppMenuItem("de.digionline.lernsax"), 2)
+                                                , 1
+                                        )
+                                , 4
+                        )
+        );
+
     }
 }

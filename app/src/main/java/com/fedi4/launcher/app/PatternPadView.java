@@ -178,11 +178,11 @@ public class PatternPadView extends View {
         }
 
         // 👉 aktueller Fingerzug (noch nicht gespeichert)
-        if (selected.size() > 0 && lastX >= 0 && lastY >= 0) {
-            PointF lastPoint = centers[selected.get(selected.size() - 1)];
-            canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, glowLinePaint);
-            canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, linePaint);
-        }
+        //if (selected.size() > 0 && lastX >= 0 && lastY >= 0) {
+        //    PointF lastPoint = centers[selected.get(selected.size() - 1)];
+        //    canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, glowLinePaint);
+        //    canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, linePaint);
+        //}
 
         // ständiges Redraw, solange Trails leben
         //if (!trails.isEmpty()) postInvalidateOnAnimation();
@@ -231,7 +231,9 @@ public class PatternPadView extends View {
 
                 if (hitMove != -1) {
                     listener.onTouchDetected(hitMove);
+                    animatePoint(hitMove);
                 }
+
 
                 invalidate();
                 return true;
