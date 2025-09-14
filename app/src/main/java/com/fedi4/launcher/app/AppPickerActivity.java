@@ -1,4 +1,4 @@
-package com.fedi4.launcher;
+package com.fedi4.launcher.app;
 
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;

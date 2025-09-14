@@ -1,4 +1,4 @@
-package com.fedi4.launcher;
+package com.fedi4.launcher.app;
 
 import android.content.Context;
 import android.content.Intent;

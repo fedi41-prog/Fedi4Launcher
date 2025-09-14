@@ -11,34 +11,27 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.fedi4.launcher.app.PatternPadView;
+import com.fedi4.launcher.app.menu.AppMenuManager;
+
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
     private PatternPadView patternPad;
 
+    private AppMenuManager menuManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         patternPad = findViewById(R.id.patternPad);
+        menuManager = AppMenuManager.getInstance(this);
 
-        patternPad.setPatternListener((pattern, mappingMode) -> {
-            // Hier Beispiel: 0-1-2 öffnet YouTube
-            switch (pattern) {
-                case "0-1-2":
-                    launchApp("com.openai.chatgpt");
-                    break;
-                case "3-4-5":
-                    launchApp("com.sec.android.app.camera");
-                    break;
-                default:
-                    Toast.makeText(this, "Pattern not mapped", Toast.LENGTH_SHORT).show();
-            }
-        });
+        patternPad.setTouchListener(new AppMenuManager.TouchListener());
 
         // Example call in onCreate after patternPad is initialized
-        assignAppIconToPoint(0, "com.openai.chatgpt"); // Test with Chrome
 
         listAllInstalledApps();
     }
@@ -53,20 +46,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void assignAppIconToPoint(int pointIndex, String packageName) {
-        Log.d(TAG, "trying to load an icon...");
-        try {
-            Drawable icon = getPackageManager().getApplicationIcon(packageName);
-            Log.d(TAG, "first step done...");
-            patternPad.setPointIconDrawable(pointIndex, icon);
-            Log.d(TAG, "SUCCESS");
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.d(TAG, "ERROR, fallback icon");
-            // Fallback: eigenes Icon aus res/drawable nehmen
-            Drawable fallback = ContextCompat.getDrawable(this, android.R.drawable.ic_delete);
-            patternPad.setPointIconDrawable(pointIndex, fallback);
-        }
-    }
 
 
 
@@ -92,4 +71,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "--- Ende Liste installierter Apps ---");
     }
 
+    public PatternPadView getPatternPad() {
+        return patternPad;
+    }
 }

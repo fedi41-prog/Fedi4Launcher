@@ -1,4 +1,4 @@
-package com.fedi4.launcher;
+package com.fedi4.launcher.layout;
 
 import android.content.Context;
 import android.util.AttributeSet;

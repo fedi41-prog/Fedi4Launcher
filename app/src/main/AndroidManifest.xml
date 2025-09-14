@@ -9,7 +9,7 @@
         android:label="PatternLauncherMinimal"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
 
-        <activity android:name=".AppPickerActivity"
+        <activity android:name=".app.AppPickerActivity"
             android:exported="true"/>
 
         <activity android:name=".MainActivity"

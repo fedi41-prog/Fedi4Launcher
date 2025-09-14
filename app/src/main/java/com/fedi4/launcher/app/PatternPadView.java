@@ -1,4 +1,4 @@
-package com.fedi4.launcher;
+package com.fedi4.launcher.app;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -8,7 +8,6 @@ import android.graphics.BlurMaskFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -19,6 +18,8 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.core.content.ContextCompat;
+
+import com.fedi4.launcher.R;
 
 import java.util.ArrayList;
 
@@ -33,7 +34,7 @@ public class PatternPadView extends View {
     private ArrayList<Integer> selected = new ArrayList<>();
     private float lastX = -1, lastY = -1;
     private Path linePath = new Path();
-    private PatternListener listener;
+    private TouchListener listener;
 
     // Animation
     private float[] scaleFactors;
@@ -86,7 +87,7 @@ public class PatternPadView extends View {
         glowLinePaint.setMaskFilter(new BlurMaskFilter(25, BlurMaskFilter.Blur.NORMAL));
     }
 
-    public void setPatternListener(PatternListener listener) {
+    public void setTouchListener(TouchListener listener) {
         this.listener = listener;
     }
 
@@ -126,33 +127,31 @@ public class PatternPadView extends View {
         long now = System.currentTimeMillis();
 
         // 👉 Trail Segmente zeichnen
-        ArrayList<TrailSegment> toRemove = new ArrayList<>();
-        for (TrailSegment seg : trails) {
-            float alpha = 1f;
-            long timeLeft = seg.expireAt - now;
-            if (timeLeft <= 0) {
-                toRemove.add(seg);
-                continue;
-            }
-            if (timeLeft < TRAIL_FADE) {
-                alpha = (float) timeLeft / (float) TRAIL_FADE;
-            }
+        //ArrayList<TrailSegment> toRemove = new ArrayList<>();
+        //for (TrailSegment seg : trails) {
+        //    float alpha = 1f;
+        //    long timeLeft = seg.expireAt - now;
+        //    if (timeLeft <= 0) {
+        //        toRemove.add(seg);
+        //        continue;
+        //    }
+        //    if (timeLeft < TRAIL_FADE) {
+        //        alpha = (float) timeLeft / (float) TRAIL_FADE;
+        //    }
 
-            int col = (int) (alpha * 255);
-            linePaint.setAlpha(col);
-            glowLinePaint.setAlpha(col);
+        //    int col = (int) (alpha * 255);
+        //    linePaint.setAlpha(col);
+        //    glowLinePaint.setAlpha(col);
 
-            canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, glowLinePaint);
-            canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, linePaint);
-        }
-        trails.removeAll(toRemove);
+        //    canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, glowLinePaint);
+        //    canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, linePaint);
+        //}
+        //trails.removeAll(toRemove);
 
         // Declare this outside the loop, or as a member variable (e.g., private RectF mBitmapDrawRect = new RectF();)
         RectF bitmapDrawRect = new RectF();
 
-// ... inside onDraw() ...
-
-// 👉 Punkte zeichnen (korrigiert)
+        // 👉 Punkte zeichnen (korrigiert)
         for (int i = 0; i < centers.length; i++) {
             PointF c = centers[i];
             float scale = scaleFactors[i];
@@ -186,7 +185,7 @@ public class PatternPadView extends View {
         }
 
         // ständiges Redraw, solange Trails leben
-        if (!trails.isEmpty()) postInvalidateOnAnimation();
+        //if (!trails.isEmpty()) postInvalidateOnAnimation();
     }
 
 
@@ -217,12 +216,9 @@ public class PatternPadView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                selected.clear();
-                lastX = event.getX();
-                lastY = event.getY();
-                int hitDown = findHitNode(lastX, lastY);
+                int hitDown = findHitNode(event.getX(), event.getY());
                 if (hitDown != -1) {
-                    selected.add(hitDown);
+                    listener.onTouchDetected(hitDown);
                     animatePoint(hitDown);
                 }
                 invalidate();
@@ -234,45 +230,21 @@ public class PatternPadView extends View {
                 int hitMove = findHitNode(x, y);
 
                 if (hitMove != -1) {
-                    if (!selected.isEmpty()) {
-                        PointF prev = centers[selected.get(selected.size() - 1)];
-                        PointF cur = centers[hitMove];
-                        addTrail(prev, cur);   // Linie speichern
-                    }
-                    if (selected.isEmpty()) {
-                        selected.add(hitMove); // ✅ wiederholt erlaubt
-                        animatePoint(hitMove);
-                    } else if (selected.get(selected.size() - 1) != hitMove) {
-                        selected.add(hitMove); // ✅ wiederholt erlaubt
-                        animatePoint(hitMove);
-                    }
+                    listener.onTouchDetected(hitMove);
                 }
 
-                lastX = x;
-                lastY = y;
                 invalidate();
                 return true;
 
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 // Finger los: aktuellen Zug auch als Trail sichern
-                if (!selected.isEmpty() && lastX >= 0 && lastY >= 0) {
-                    PointF prev = centers[selected.get(selected.size() - 1)];
-                    addTrail(prev, new PointF(lastX, lastY));
+
+                if (listener != null) {
+                    Log.d("PatternPad", "confirmed pattern ----");
+                    listener.onTouchEnded();
                 }
 
-                if (listener != null && !selected.isEmpty()) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < selected.size(); i++) {
-                        if (i > 0) sb.append("-");
-                        sb.append(selected.get(i));
-                    }
-                    Log.d("PatternPad", "Detected pattern: " + sb.toString());
-                    listener.onPatternDetected(sb.toString(), false);
-                }
-
-                selected.clear();
-                lastX = lastY = -1;
                 invalidate();
                 return true;
         }
@@ -331,8 +303,9 @@ public class PatternPadView extends View {
         return bitmap;
     }
 
-    public interface PatternListener {
-        void onPatternDetected(String pattern, boolean mappingMode);
+    public interface TouchListener {
+        void onTouchDetected(int point);
+        void onTouchEnded();
     }
 
     private void addTrail(PointF start, PointF end) {
