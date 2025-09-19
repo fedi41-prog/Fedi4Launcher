@@ -8,6 +8,7 @@ import android.graphics.BlurMaskFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -36,6 +37,8 @@ public class PatternPadView extends View {
     private Path linePath = new Path();
     private TouchListener listener;
 
+    private int lastHit = -1;
+
     // Animation
     private float[] scaleFactors;
 
@@ -57,8 +60,6 @@ public class PatternPadView extends View {
     private ArrayList<TrailSegment> trails = new ArrayList<>();
     private static final long TRAIL_LIFETIME = 0; // ms sichtbar
     private static final long TRAIL_FADE = 500;     // ms zum Ausfaden
-
-    private Drawable[] nodeIcons = new Drawable[GRID * GRID];
 
 
     private void init() {
@@ -126,27 +127,37 @@ public class PatternPadView extends View {
 
         long now = System.currentTimeMillis();
 
+        // ============================================================
+
         // 👉 Trail Segmente zeichnen
-        //ArrayList<TrailSegment> toRemove = new ArrayList<>();
-        //for (TrailSegment seg : trails) {
-        //    float alpha = 1f;
-        //    long timeLeft = seg.expireAt - now;
-        //    if (timeLeft <= 0) {
-        //        toRemove.add(seg);
-        //        continue;
-        //    }
-        //    if (timeLeft < TRAIL_FADE) {
-        //        alpha = (float) timeLeft / (float) TRAIL_FADE;
-        //    }
+        ArrayList<TrailSegment> toRemove = new ArrayList<>();
+        for (TrailSegment seg : trails) {
+            float alpha = 1f;
+            long timeLeft = seg.expireAt - now;
+            if (timeLeft <= 0) {
+                toRemove.add(seg);
+                continue;
+            }
+            if (timeLeft < TRAIL_FADE) {
+                alpha = (float) timeLeft / (float) TRAIL_FADE;
+            }
 
-        //    int col = (int) (alpha * 255);
-        //    linePaint.setAlpha(col);
-        //    glowLinePaint.setAlpha(col);
+            int col = (int) (alpha * 255);
+            linePaint.setAlpha(col);
+            glowLinePaint.setAlpha(col);
 
-        //    canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, glowLinePaint);
-        //    canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, linePaint);
-        //}
-        //trails.removeAll(toRemove);
+            canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, glowLinePaint);
+            canvas.drawLine(seg.start.x, seg.start.y, seg.end.x, seg.end.y, linePaint);
+        }
+        trails.removeAll(toRemove);
+        // 👉 aktueller Fingerzug (noch nicht gespeichert)
+        if (lastHit != -1 && lastX != -1 && lastY != -1) {
+            PointF lastPoint = getCenterCoordinatesForPoint(lastHit);
+            canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, glowLinePaint);
+            canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, linePaint);
+        }
+
+        // =========================================================
 
         // Declare this outside the loop, or as a member variable (e.g., private RectF mBitmapDrawRect = new RectF();)
         RectF bitmapDrawRect = new RectF();
@@ -158,34 +169,38 @@ public class PatternPadView extends View {
             Bitmap icon = pointIcons[i]; // 'icon' is a Bitmap
 
             if (icon != null) {
-                float scaledDiameter = radius * 2 * scale;
-                float left = c.x - scaledDiameter / 2f;
-                float top = c.y - scaledDiameter / 2f;
-                float right = c.x + scaledDiameter / 2f;
-                float bottom = c.y + scaledDiameter / 2f;
+                int size = (int) (radius * 2 * scale);
+                int left = (int) (c.x - size / 2f);
+                int top = (int) (c.y - size / 2f);
+                int right = left + size;
+                int bottom = top + size;
 
-                bitmapDrawRect.set(left, top, right, bottom);
+                // Canvas auf Kreis beschränken
+                int save = canvas.save();
+                Path circlePath = new Path();
+                circlePath.addCircle(c.x, c.y, radius * scale, Path.Direction.CW);
+                canvas.clipPath(circlePath);
 
-                // Use canvas.drawBitmap()
-                // The first 'null' means draw the entire source bitmap.
-                // The third argument is the destination rectangle.
-                // The last 'null' can be a Paint object if you need to apply effects, otherwise null is fine.
-                canvas.drawBitmap(icon, null, bitmapDrawRect, null);
+                // Bitmap skalieren und zeichnen
+                Rect src = new Rect(0, 0, icon.getWidth(), icon.getHeight());
+                Rect dst = new Rect(left, top, right, bottom);
+                canvas.drawBitmap(icon, src, dst, null);
+
+                // Clip zurücksetzen
+                canvas.restoreToCount(save);
+
+                // Optional Rand des Kreises zeichnen
                 canvas.drawCircle(c.x, c.y, radius * scale, circlePaint);
             } else {
                 canvas.drawCircle(c.x, c.y, radius * scale, circlePaint);
             }
+
         }
 
-        // 👉 aktueller Fingerzug (noch nicht gespeichert)
-        //if (selected.size() > 0 && lastX >= 0 && lastY >= 0) {
-        //    PointF lastPoint = centers[selected.get(selected.size() - 1)];
-        //    canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, glowLinePaint);
-        //    canvas.drawLine(lastPoint.x, lastPoint.y, lastX, lastY, linePaint);
-        //}
+        // ============================================================
 
         // ständiges Redraw, solange Trails leben
-        //if (!trails.isEmpty()) postInvalidateOnAnimation();
+        if (!trails.isEmpty()) postInvalidateOnAnimation();
     }
 
 
@@ -198,12 +213,32 @@ public class PatternPadView extends View {
             float dy = y - p.y;
             if (dx * dx + dy * dy <= radius * radius) return i;
         }
+
         return -1;
+    }
+    private PointF getCenterCoordinatesForPoint(int pointId) {
+        // Überprüfen, ob die 'centers' initialisiert wurden und die pointId gültig ist
+        if (centers != null && pointId >= 0 && pointId < centers.length) {
+            // Direkter Zugriff auf das PointF-Objekt im Array
+            PointF center = centers[pointId];
+            // Optional: Eine neue Instanz zurückgeben, um die interne Instanz vor externer Modifikation zu schützen.
+            // Für die meisten Anwendungsfälle ist die direkte Rückgabe der Referenz in Ordnung und performanter.
+            // return new PointF(center.x, center.y); // Wenn Kapselung des internen Objekts gewünscht ist
+            return center;
+        } else {
+            // Loggen Sie einen Fehler oder eine Warnung, wenn die ID ungültig ist oder die Zentren nicht initialisiert sind
+            if (centers == null) {
+                Log.w("PatternPadView", "getCenterCoordinatesForPoint: 'centers' array is not initialized yet.");
+            } else {
+                Log.w("PatternPadView", "getCenterCoordinatesForPoint: Invalid pointId: " + pointId + ". Must be between 0 and " + (centers.length - 1));
+            }
+            return null; // Ungültige ID oder Zentren nicht bereit
+        }
     }
 
     private void animatePoint(int idx) {
-        ValueAnimator anim = ValueAnimator.ofFloat(1f, 1.45f, 1f);
-        anim.setDuration(240);
+        ValueAnimator anim = ValueAnimator.ofFloat(1f, 1.35f, 1.4f, 1.35f, 1f);
+        anim.setDuration(200);
         anim.setInterpolator(new DecelerateInterpolator());
         anim.addUpdateListener(valueAnimator -> {
             scaleFactors[idx] = (float) valueAnimator.getAnimatedValue();
@@ -216,10 +251,13 @@ public class PatternPadView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                int hitDown = findHitNode(event.getX(), event.getY());
-                if (hitDown != -1) {
+                lastX = event.getX();
+                lastY = event.getY();
+                int hitDown = findHitNode(lastX, lastY);
+                if (hitDown != -1 && hitDown != lastHit) {
                     listener.onTouchDetected(hitDown);
                     animatePoint(hitDown);
+                    lastHit = hitDown;
                 }
                 invalidate();
                 return true;
@@ -229,11 +267,21 @@ public class PatternPadView extends View {
                 float y = event.getY();
                 int hitMove = findHitNode(x, y);
 
-                if (hitMove != -1) {
+                if (hitMove != -1 && hitMove != lastHit) {
                     listener.onTouchDetected(hitMove);
                     animatePoint(hitMove);
+
+                    PointF prev = getCenterCoordinatesForPoint(lastHit);
+                    PointF cur = getCenterCoordinatesForPoint(hitMove);
+
+                    if (prev != null && cur != null) {
+                        addTrail(prev, cur);
+                    }
+                    lastHit = hitMove;
                 }
 
+                lastX = x;
+                lastY = y;
 
                 invalidate();
                 return true;
@@ -242,10 +290,17 @@ public class PatternPadView extends View {
             case MotionEvent.ACTION_CANCEL:
                 // Finger los: aktuellen Zug auch als Trail sichern
 
+                float xx = event.getX();
+                float yy = event.getY();
+                int hitEnd = findHitNode(xx, yy);
+
                 if (listener != null) {
                     Log.d("PatternPad", "confirmed pattern ----");
-                    listener.onTouchEnded();
+                    listener.onTouchEnded(hitEnd);
+                    lastHit = -1;
                 }
+
+                lastX = lastY = -1;
 
                 invalidate();
                 return true;
@@ -307,7 +362,8 @@ public class PatternPadView extends View {
 
     public interface TouchListener {
         void onTouchDetected(int point);
-        void onTouchEnded();
+
+        void onTouchEnded(int point);
     }
 
     private void addTrail(PointF start, PointF end) {

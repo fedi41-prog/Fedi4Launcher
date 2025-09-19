@@ -10,7 +10,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.fedi4.launcher.app.PatternPadView;
-import com.fedi4.launcher.app.AppMenuManager;
+import com.fedi4.launcher.app.appmenu.AppMenuManager;
 
 import java.util.List;
 
@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
     private PatternPadView patternPad;
 
     private AppMenuManager menuManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,14 +83,23 @@ public class MainActivity extends AppCompatActivity {
                         .insertItem(
                                 new AppMenuManager.AppMenuItem("com.android.settings")
                                         .insertItem(
-                                                new AppMenuManager.AppMenuItem("com.chess")
-                                                        .insertItem(new AppMenuManager.AppMenuItem("com.openai.chatgpt"), 0)
-                                                        .insertItem(new AppMenuManager.AppMenuItem("de.digionline.lernsax"), 2)
+                                                new AppMenuManager.AppMenuItem("com.chess").addTag("executable").addTag("folder")
+                                                        .insertItem(new AppMenuManager.AppMenuItem("com.openai.chatgpt").addTag("executable"), 0)
+                                                        .insertItem(new AppMenuManager.AppMenuItem("de.digionline.lernsax").addTag("executable"), 2)
                                                 , 1
                                         )
+                                        .addTag("folder")
                                 , 4
                         )
-        );
+                        .insertItem(
+                                new AppMenuManager.AppMenuItem("games")
+                                        .insertItem(new AppMenuManager.AppMenuItem("com.zeptolab.evopop").addTag("executable"), 4)
+                                        .insertItem(new AppMenuManager.AppMenuItem("air.com.midjiwan.polytopia").addTag("executable"), 1)
+                                        .addTag("folder")
+                                        .setIcon("$CUSTOM:icon_games.jpg")
+                                ,5
+                        )
+        ); //TODO: replace with json parsing function
 
     }
 }

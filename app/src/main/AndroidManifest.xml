@@ -6,7 +6,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="PatternLauncherMinimal"
+        android:label="Fedi4Launcher"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
 
         <activity android:name=".app.AppPickerActivity"

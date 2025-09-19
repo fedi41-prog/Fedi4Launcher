@@ -1,0 +1,19 @@
+{
+  "root_items":
+  {
+    "icon": "$CUSTOM:test",
+    "tags": ["folder"],
+    "items": {
+      "1": {
+        "package": "com.fedi4.launcher",
+        "tags": ["executable", "folder"],
+        "items": {
+          "2": {
+            "package": "com.fedi4.launcher",
+            "tags": ["executable"]
+          }
+        }
+      }
+    }
+  }
+}
