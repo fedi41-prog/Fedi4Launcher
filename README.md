@@ -1,4 +1,4 @@
-<h1>📱 Pattern Launcher </h1>
+<h1>📱 Pattern Launcher (in work)</h1>
 
 A minimal Android custom launcher that opens apps through a 3×3 pattern pad.
 Instead of tapping icons, you draw patterns (like the classic lockscreen) to open apps or folders.
